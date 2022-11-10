@@ -77,6 +77,58 @@ The mean and variance are $E(X)=\alpha\sigma$ and $Var(X)=\alpha\sigma^2$. Note 
 
 *Hint*: Perhaps you should think of writing a single `function` where you will provide the values of `n`, `sim_size`, `alpha` and `sigma`; and it will return the desired output. 
 
+```{r,warning=FALSE,message=FALSE}
+MyMLE = function(data_obtained,sigma,initial)
+{
+  NegLogLike = function(initial,data_obtained)
+  {
+    alphatemp = exp(initial)
+    n = length(data_obtained)
+    logl = 0
+    for(i in 1:n)
+    {
+      logl = logl + dgamma(data_obtained[i],
+                  shape = alphatemp,scale=sigma,log = TRUE)
+      
+    }
+    return(-logl)
+  }
+  fit = optim(initial,NegLogLike,data_obtained=data_obtained)
+  log(exp(fit$par))
+}
+
+resultfunction = function(alpha,sigma,n,sim_size,initial)
+{
+  mles = c(rep(0,sim_size))
+  for(i in 1:sim_size)
+  {
+    dat = rgamma(n,shape=alpha,scale = sigma)
+    mles[i] = MyMLE(data_obtained = dat,sigma = sigma,
+                    initial = initial)
+  }
+  library(ggplot2)
+  library(randomcoloR) 
+  hist(mles,col=randomColor(),main='Histogram for MLES ')
+  abline(v=log(alpha),lwd=2,col='black')
+  quantile(mles,probs=0.975) - quantile(mles,probs=0.025)
+}
+
+```
+<br><br><br>
+We have now written a function called 'resultfunction which takes values for alpha, sigma, n, simulation size and initial value for all mle estimates as the input and gives the desired output.
+<br><br><br>
+```{r}
+
+resultfunction(alpha = 1.5,sigma = 2.2,initial = 3,
+              n = 20,sim_size = 1000)
+resultfunction(alpha = 1.5,sigma = 2.2,initial = 3,
+              n = 40,sim_size = 1000)
+resultfunction(alpha = 1.5,sigma = 2.2,initial = 3,
+              n = 100,sim_size = 1000)
+
+
+```
+
 \newpage
 
 ## Problem 3: Analysis of `faithful` datasets.
