@@ -9,3 +9,19 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+### Exercise 1:
+
+
+
+
+### Exercise 2:
+
+
+
+
+
+
+
+
+
+
