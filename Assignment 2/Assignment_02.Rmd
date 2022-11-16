@@ -157,7 +157,7 @@ P_b= sum(dpois(c(1,2,3),1.5))
 P_a
 P_b
 ```
-6. We would expect the poisson distribution to be better as the concept of counting certain event in a fixed amount of time fits better in poisson distribution than in a geometric setting. (Ex. Poisson distribution is used to model number of cars passing the tollgate etc).We would expect poisson to be better for counting the number of goals but we know that for poisson distribution, mean and variance should be equal, in our case mean=1.5 and variance=2.25. Hence poisson is not a good fit and we would prefer the new geometric distribution that we defined.  
+6. Poisson distribution is generally used for counting the occurrence of  certain event in a fixed amount of time. (Ex. Poisson distribution is used to model number of cars passing the tollgate etc). Therefore we would prefer poisson distribution as it is a better model for fitting the number of goals scored by the home team in a match ( fixed time - 90 minutes) compared to geometric distribution.  
 
 7. Maximum Likelihood function: 
 Consider $x_1,x_2 \cdots ,x_n$ be a sample drawn from the theoretical distribution
@@ -886,12 +886,12 @@ where $\mathbb{E}(\varepsilon)=0$ and $\mathbb{V}ar(\varepsilon)=\sigma^2$.
 $$
 \\\ \\ 
 $$
-The three population moments that we are going to use to estimate the parameter values are 
+The three moments that we are going to use to estimate the parameter values are 
 $$
 E[\epsilon_i]=0 ~~~ E[\epsilon_i r_{t_i}^{Nifty} ]=0 ~~~ E[\epsilon_i^{2}]=\sigma^{2} \\\ \\
 $$
 
-The equivalent sample moments for the above population moments are:-  
+The equivalent equations are:-  
 
 $$
 \frac {1}{n} \sum_{i=1}^{n} [r_{t_i}^{TCS}-\hat\alpha - \hat\beta r_{t_i}^{Nifty}]=0 ~~~\\
@@ -921,6 +921,7 @@ b=c(-tcs_avg,-tcsxnifty_avg)
 s=solve(A,b)
 
 si= sum((retrn$TCS.NS.Adjusted - s[1] - s[2]*retrn$NSEI.Adjusted)^2)/(length(retrn$TCS.NS.Adjusted)-2)
+si = sqrt(si)
 ```
 The estimated values of $\hat\alpha$,$\hat\beta$ and $\sigma^{2}$ respectively is
 ```{r message=FALSE, warning=FALSE}
@@ -938,6 +939,7 @@ $$
 ```{r message=FALSE, warning=FALSE}
 tcs_exp=model_fit$coefficients[1] + model_fit$coefficients[2] *retrn$NSEI.Adjusted
 si_e=sum((retrn$TCS.NS.Adjusted-tcs_exp)^2)/(length(tcs_exp)-2)
+si_e = sqrt(si_e)
 ```
 The estimated parameter values are 
 ```{r message=FALSE, warning=FALSE}
@@ -950,9 +952,9 @@ Parameters | Method of Moments | OLS
 -----------|-------------------|-----
 $\alpha$   |   0.0004611207    | 0.0004611207
 $\beta$    |   0.7436969330    | 0.7436969330
-$\sigma$   |   0.0002620749    | 0.0002620749
+$\sigma$   |   0.0161848154    | 0.0161848154
 
-We got the same estimated parameter values using Method of Moments and the $lm()$ function which uses Ordinary least sqaure method.
+We got the same estimated parameter values using Method of Moments and the $lm()$ function which uses Ordinary least square method.
 
 4. If the current value of Nifty is 18000 and it goes up to 18200. The current value of TCS is Rs. 3200/-. How much you can expect TCS price to go up?
 
