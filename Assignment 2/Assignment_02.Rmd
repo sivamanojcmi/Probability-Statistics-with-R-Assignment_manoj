@@ -1,8 +1,10 @@
 ---
-title: "**Probability and Statistics with R**"
-author: "**Assignment 2**"
+title: '**Probability and Statistics with R**'
+author: '**Assignment 2**'
 date: "Submission Nov 16-2022 (Wednesday)"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 **Note**: Below I explain how you collaborate on `GitHub`.
@@ -53,6 +55,132 @@ Using the summary statistics and your newly defined probability distribution mod
  b. What is the probability that home team will score at least one goal but less than four goal?
 6. Which probability model you would prefer over another?
 7. Write down the likelihood functions of your newly defined probability models and Poisson models. Clearly mention all the assumptions that you are making.
+
+
+1.We are modelling the number of goals scored by the home team in a premier league match using S the geometric progression sequence.We have made the following conditions and definitions regarding the model.
+ Let $a$ to associated with an hypothetical situation after which no goal is going to be scored and $r$ that a goal happens.We assume $r>0$ and $a>0$
+ For example: consider outcome of a match to be $ra$, this means that in that match after the home team scored a goal it didn't score any more goals.The outcome only $a$ would represent no goal was scored in the match by the home team.
+ The distribution would be 
+ 
+$$
+ f(X=n)= r^na
+$$
+ 
+ For every $n$ the the value is positive.For this to be a probability function sum of all the probabilities should be 1.
+ 
+$$
+\sum_{n=0}^{inf} f(X=n)=1 \\
+  \sum_{n=0}^{inf} r^na=1 \\
+  a\sum_{n=0}^{inf} r^n=1 \\
+$$
+ 
+This series converges only when $|r|<1$. Therefore we have $0<r<1$ (associated to probability of scoring a goal)
+$$
+\frac{a}{1-r} =1 \\
+a=1-r
+$$
+Therefore the probability distribution would be
+$$
+ P(X=n)= r^n(1-r)~~~~~n=0,1,2,\cdots\
+$$
+where n is the number of goals scored by the home team in that match.
+
+2. We need to show that mean and variance exists for the new distribution we have defined.To show mean exists we need to show that $E[|X|]$ exist, since $X$ takes positive values E[|X|] is nothing but E[X].
+$$
+E[X]= \sum_{n=0}^{inf} nP(X=n) \\
+ = \sum_{n=0}^{inf} nr^n(1-r)\\
+ = (1-r)\sum_{n=0}^{inf} nr^n \\
+ (~~wkt~~~~ \sum_{n=0}^{inf} nr^n =\frac {r}{(1-r)^2}~~) \\
+ = (1-r)\frac {r}{(1-r)^2}= \frac {r}{(1-r)} \\
+$$
+Therefore mean exists for the new distribution, we can similarly show that $E[|X^{2}|]$ (which is equal to the E[X^{2}]) exists and is equal to 
+$$
+E[X^{2}]= \frac {r^{2} + r}{(1-r)^{2}}
+$$
+Hence variance also exists as 
+$$
+var[X]=E[X^{2}]-(E[X])^{2}
+$$
+and it is equal to
+$$
+Var[X]= \frac {r^{2} + r}{(1-r)^{2}} ~-~  (\frac {r}{(1-r)})^{2} \\
+= ~~~~ \frac {r}{(1-r)^{2}}
+$$
+Therefore mean and variance exists for the new distribution.
+3. The analytical form of mean and variance is
+$$
+E[X]=\frac {r}{(1-r)} ~~~~  Var[X]=\frac {r}{(1-r)^{2}}
+$$
+4. Historical data gives us that the mean number of goals scored by the home team (based on past 380 matches ) is 1.5. We equate this to our theoretical mean and calculate the value.
+$$
+\frac {r}{1-r}=\frac {3}{2} \\
+2r=3-3r \\
+r=\frac {3}{5}
+$$
+Therefore our probability distribution is 
+$$
+P(X=n)=\frac {2}{5}(\frac {3}{5})^{n}
+$$
+4.
+a. Probability of at least one goal.
+$$
+P(X \geq 1)= \sum_{n=1}^{inf} \frac {2}{5}(\frac {3}{5})^{n}\\
+= \frac {2}{5} \sum_{n=1}^{inf} (\frac {3}{5})^{n}
+= \frac {2}{5} \frac {\frac {3}{5}}{1-\frac {3}{5}} = \frac {3}{5} 
+$$
+
+This is similar to $ 1- P(X=0) = 1- \frac {2}{5} = \frac{3}{5} $
+b. The probability that home team will score at least one goal but less than four goal
+$$
+P(1\leq X < 4)= \sum_{n=1}^{3} \frac {2}{5}(\frac {3}{5})^{n}\\
+= \frac {2}{5} \sum_{n=1}^{3} (\frac {3}{5})^{n}
+= \frac {2}{5}( \frac {3}{5} + \frac {9}{25}+ \frac {27}{125}) = 0.4704  
+$$
+We know that this new model is geometric distribution with parameter $p=\frac {3}{5}$. We can use inbuilt functions to calculate these probabilities.
+```{r message=FALSE, warning=FALSE}
+## a. probability of atleast one goal
+P_a= 1- dgeom(0,2/5)
+## a. probability of atleast one goal and less than 4 goals
+P_b= sum(dgeom(c(1,2,3),2/5))
+P_a
+P_b
+```
+5. We assume that the underlying distribution for the number of goals scored by the home team is poisson distribution.Let random variable $Y \sim Pois(\lambda)$. We know that $E[Y]=\lambda$ and from historical data we know the mean is 1.5. Hence $Y \sim Pois(\lambda=1.5)$. We calculate the probability using inbuilt function.
+```{r message=FALSE, warning=FALSE}
+## a. probability of at least one goal
+P_a= 1- dpois(0,1.5)
+
+## b. probability of at least one goal and less than 4 goals
+P_b= sum(dpois(c(1,2,3),1.5))
+
+
+P_a
+P_b
+```
+6. We would expect the poisson distribution to be better as the concept of counting certain event in a fixed amount of time fits better in poisson distribution than in a geometric setting. (Ex. Poisson distribution is used to model number of cars passing the tollgate etc).We would expect poisson to be better for counting the number of goals but we know that for poisson distribution, mean and variance should be equal, in our case mean=1.5 and variance=2.25. Hence poisson is not a good fit and we would prefer the new geometric distribution that we defined.  
+
+7. Maximum Likelihood function: 
+Consider $x_1,x_2 \cdots ,x_n$ be a sample drawn from the theoretical distribution
+  a. New distribution - $P(X=n)=(1-r)(r)^{n}$
+  The likelihood function for the following distribution is :-
+$$
+L(r_\theta|x_1,x_2 \cdots ,x_n)=P(x_1,x_2 \cdots ,x_n|r_\theta)\\
+=P(x_1|r_\theta).P(x_2|r_\theta) \cdots P(x_n|r_\theta) \\
+=(1-r_\theta)(r_\theta)^{x_1}.(1-r_\theta)(r_\theta)^{x_1} \cdots (1-r_\theta)(r_\theta)^{x_n}\\
+=(1-r_\theta)^{n}.(r_\theta)^{\sum_{i=1}^{n} x_i}
+$$
+  b. Poisson Distribution - $P(X=n)=\frac {e^{-\lambda} \lambda^n}{n!}$
+  The likelihood function of the following distribution is 
+$$
+L(\lambda_\theta|x_1,x_2 \cdots ,x_n)=P(x_1,x_2 \cdots ,x_n|\lambda_\theta)\\
+=P(x_1|\lambda_\theta).P(x_2|\lambda_\theta) \cdots P(x_n|\lambda_\theta) \\
+=\frac {e^{-\lambda} \lambda^{x_1}}{x_1!}.\frac {e^{-\lambda} \lambda^{x_2}}{x_2!} \cdots \frac {e^{-\lambda} \lambda^{x_n}}{x_n!}\\
+= \frac {e^{-n\lambda} \lambda^{\sum_{i=1}^{n} x_i}}{x_1!.x_2! \cdots x_n! }
+$$
+One main assumption that we make in both the likelihood functions is that the sample is independently and identically drawn from their respective distributions. Here independence means that the goals scored in one match doesn't affect the goals scored in another match. We assume that each match is identical to the other matches (that is there is no knockout matches or a club rivalry match), this ensures that the distribution followed in each match is identical.
+
+
+
 
 ## Problem 2 : Simulation Study to Understand Sampling Distribution
 
@@ -293,17 +421,85 @@ $$
 r_{t}^{TCS}=\alpha + \beta r_{t}^{Nifty} + \varepsilon,
 $$
 where $\mathbb{E}(\varepsilon)=0$ and $\mathbb{V}ar(\varepsilon)=\sigma^2$.
-
 1. Estimate the parameters of the models $\theta=(\alpha,\beta,\sigma)$ using the method of moments type plug-in estimator discussed in the class.
+$$
+\\\ \\ 
+$$
+The three population moments that we are going to use to estimate the parameter values are 
+$$
+E[\epsilon_i]=0 ~~~ E[\epsilon_i r_{t_i}^{Nifty} ]=0 ~~~ E[\epsilon_i^{2}]=\sigma^{2} \\\ \\
+$$
 
+The equivalent sample moments for the above population moments are:-  
+
+$$
+\frac {1}{n} \sum_{i=1}^{n} [r_{t_i}^{TCS}-\hat\alpha - \hat\beta r_{t_i}^{Nifty}]=0 ~~~\\
+\frac {1}{n} \sum_{i=1}^{n} r_{t_i}^{TCS}- \frac {1}{n} \sum_{i=1}^{n}\hat\alpha - \frac {1}{n} \sum_{i=1}^{n}\hat\beta r_{t_i}^{Nifty}=0 ~~~\\
+\overline r_{t_i}^{TCS}-\hat\alpha - \hat\beta \overline r_{t_i}^{Nifty} =0 ~~~~~~---- equation~1\\\ \\
+\frac {1}{n} \sum_{i=1}^{n} [(r_{t_i}^{TCS}-\hat\alpha - \hat\beta r_{t_i}^{Nifty})r_{t_i}^{Nifty}]=0 \\
+\frac {1}{n} \sum_{i=1}^{n} [(r_{t_i}^{TCS}r_{t_i}^{Nifty}-\hat\alpha r_{t_i}^{Nifty} - \hat\beta (r_{t_i}^{Nifty})^{2}]=0 \\
+\frac {1}{n} \sum_{i=1}^{n} (r_{t_i}^{TCS}r_{t_i}^{Nifty}- \frac {1}{n} \sum_{i=1}^{n} \hat\alpha r_{t_i}^{Nifty} - \frac {1}{n} \sum_{i=1}^{n}  \hat\beta (r_{t_i}^{Nifty})^{2}=0 \\
+\frac {1}{n} \sum_{i=1}^{n} (r_{t_i}^{TCS}r_{t_i}^{Nifty})-  \hat\alpha \overline r_{t_i}^{Nifty} - \hat\beta \frac {1}{n} \sum_{i=1}^{n}   (r_{t_i}^{Nifty})^{2}=0 ~~~~~~---- equation~2\\\ \\ 
+\frac {1}{n} \sum_{i=1}^{n} [r_{t_i}^{TCS}-\hat\alpha - \hat\beta r_{t_i}^{Nifty}]^{2}=\hat\sigma^{2}~~~~~~---- equation~3
+$$
+
+
+
+```{r message=FALSE, warning=FALSE}
+tcs_avg=mean(retrn$TCS.NS.Adjusted)
+nifty_avg=mean(retrn$NSEI.Adjusted)
+tcsxnifty_avg=mean(retrn$TCS.NS.Adjusted*retrn$NSEI.Adjusted)
+sqr_nifty_avg=mean(retrn$NSEI.Adjusted^{2})
+
+## the equations are 
+## 1. tcs_avg - \hat\alpha -\hat\beta*nifty_avg=0
+## 2. tcsxnifty_avg - \hat\alpha*nifty_avg - \hat\beta*sqr_nifty_avg =0
+
+A=matrix(c(-1,-nifty_avg,-nifty_avg,-sqr_nifty_avg),2,2)
+b=c(-tcs_avg,-tcsxnifty_avg)
+s=solve(A,b)
+
+si= sum((retrn$TCS.NS.Adjusted - s[1] - s[2]*retrn$NSEI.Adjusted)^2)/(length(retrn$TCS.NS.Adjusted)-2)
+```
+The estimated values of $\hat\alpha$,$\hat\beta$ and $\sigma^{2}$ respectively is
+```{r message=FALSE, warning=FALSE}
+c(s,si)
+```
 2. Estimate the parameters using the `lm` built-in function of `R`. Note that `lm` using the OLS method.
+```{r message=FALSE, warning=FALSE}
+model_fit=lm(retrn$TCS.NS.Adjusted~retrn$NSEI.Adjusted)
+model_fit
+```
+Therefore the linear model fit is
+$$
+r_{t}^{TCS}=0.0004611 + 0.7436969 r_{t}^{Nifty}
+$$
+```{r message=FALSE, warning=FALSE}
+tcs_exp=model_fit$coefficients[1] + model_fit$coefficients[2] *retrn$NSEI.Adjusted
+si_e=sum((retrn$TCS.NS.Adjusted-tcs_exp)^2)/(length(tcs_exp)-2)
+```
+The estimated parameter values are 
+```{r message=FALSE, warning=FALSE}
+c(model_fit$coefficients[1],model_fit$coefficients[2],si_e)
+```
 
 3. Fill-up the following table
 
 Parameters | Method of Moments | OLS
 -----------|-------------------|-----
-$\alpha$   |                   |
-$\beta$    |                   |
-$\sigma$   |                   |
+$\alpha$   |   0.0004611207    | 0.0004611207
+$\beta$    |   0.7436969330    | 0.7436969330
+$\sigma$   |   0.0002620749    | 0.0002620749
+
+We got the same estimated parameter values using Method of Moments and the $lm()$ function which uses Ordinary least sqaure method.
 
 4. If the current value of Nifty is 18000 and it goes up to 18200. The current value of TCS is Rs. 3200/-. How much you can expect TCS price to go up?
+
+First we calculate the log returns for nifty and substitute it in the model we fit
+```{r message=FALSE, warning=FALSE}
+r_nifty=log(18200)-log(18000)
+r_tcs=0.0004611207+ 0.7436969330* r_nifty
+tcs_in= exp(r_tcs)*3200
+tcs_in
+```
+Therefore we can expect the TCS price to go up 27.893 Rupees.
