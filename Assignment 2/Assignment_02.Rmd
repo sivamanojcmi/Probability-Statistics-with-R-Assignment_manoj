@@ -206,56 +206,80 @@ The mean and variance are $E(X)=\alpha\sigma$ and $Var(X)=\alpha\sigma^2$. Note 
 *Hint*: Perhaps you should think of writing a single `function` where you will provide the values of `n`, `sim_size`, `alpha` and `sigma`; and it will return the desired output. 
 
 ```{r,warning=FALSE,message=FALSE}
-MyMLE = function(data_obtained,sigma,initial)
+
+MyMLE = function(data_obtained,sigma)
 {
-  NegLogLike = function(initial,data_obtained)
+  LogLike = function(initial = 1.5 ,data_obtained)
   {
     alphatemp = exp(initial)
     n = length(data_obtained)
-    logl = 0
-    for(i in 1:n)
-    {
-      logl = logl + dgamma(data_obtained[i],
-                  shape = alphatemp,scale=sigma,log = TRUE)
-      
-    }
-    return(-logl)
+    logl = sum(dgamma(data_obtained,
+                  shape = alphatemp,scale=sigma,log = TRUE))
+    return(logl)
   }
-  fit = optim(initial,NegLogLike,data_obtained=data_obtained)
-  log(exp(fit$par))
+  fit = optimise(f = LogLike,interval = c(0,5),
+                 maximum = T,data_obtained=data_obtained)
+  fit$maximum
 }
+```
 
-resultfunction = function(alpha,sigma,n,sim_size,initial)
+We are now going to write a function called 'result function' which
+takes values for alpha, sigma, n and simulation size as input and
+outputs the histogram of MLE estimates as well as the Interquartile
+range for the selected value of n.
+
+```{r,warning=FALSE,message=FALSE}
+resultfunction = function(alpha,sigma,n,sim_size)
 {
   mles = c(rep(0,sim_size))
   for(i in 1:sim_size)
   {
     dat = rgamma(n,shape=alpha,scale = sigma)
-    mles[i] = MyMLE(data_obtained = dat,sigma = sigma,
-                    initial = initial)
+    mles[i] = MyMLE(data_obtained = dat,sigma = sigma)
   }
   library(ggplot2)
   library(randomcoloR) 
-  hist(mles,col=randomColor(),main='Histogram for MLES ')
+  
+  hist(mles,col=randomColor(),
+       main=paste('Histogram of MLE estimates for n = ',n),
+       xlab = paste('Values of MLE estimates for different samples of size ',n),ylab = 'Frequency')
+  
   abline(v=log(alpha),lwd=2,col='black')
-  quantile(mles,probs=0.975) - quantile(mles,probs=0.025)
+  
+  IQR = quantile(mles,probs=0.975) - quantile(mles,probs=0.025)
+  
+  print(paste('Inter quantile range for n = ',n,'is:',round(IQR,2)))
 }
 
 ```
-<br><br><br>
-We have now written a function called 'resultfunction which takes values for alpha, sigma, n, simulation size and initial value for all mle estimates as the input and gives the desired output.
-<br><br><br>
-```{r}
 
-resultfunction(alpha = 1.5,sigma = 2.2,initial = 3,
+Further we are going to examine the sampling distribution of MLEs for different values of n.
+
+Choose n = 20:
+
+```{r message=FALSE, warning=FALSE}
+
+resultfunction(alpha = 1.5,sigma = 2.2,
               n = 20,sim_size = 1000)
-resultfunction(alpha = 1.5,sigma = 2.2,initial = 3,
-              n = 40,sim_size = 1000)
-resultfunction(alpha = 1.5,sigma = 2.2,initial = 3,
-              n = 100,sim_size = 1000)
-
-
 ```
+
+Choose n = 40
+
+```{r message=FALSE, warning=FALSE}
+resultfunction(alpha = 1.5,sigma = 2.2,
+              n = 40,sim_size = 1000)
+```
+
+Choose n = 100
+
+```{r message=FALSE, warning=FALSE}
+resultfunction(alpha = 1.5,sigma = 2.2,
+              n = 100,sim_size = 1000)
+```
+
+<br> 
+Thus we can observe that the as the value of n increases, the
+interquartile range decreases.  
 
 \newpage
 
@@ -287,9 +311,8 @@ $$
 f(x)=p*logNormal(x|\mu_1,\sigma_1^2)+(1-p)logNormal(x|\mu_1,\sigma_1^2),~~0<p<1
 $$
 <br><br><br>
+We know that we need to give suitable initial values for our model to get the correct Maximum Likelihood Estimates. Hence, we can use method of moments estimation to get the suitable initial values.
 
-We know that we need to give suitable initial values for our model to 
-give sensible Maximum Likelihood Estimates. Hence, we can use the following for initial values for our parameters:
 ```{r}
 mean1 = mean(waiting[waiting<65])
 variance1 = (sd(waiting[waiting<65]))^2
@@ -298,170 +321,244 @@ variance2 = (sd(waiting[waiting>=65]))^2
 
 ```
 
-* Model 1:
- 
-    + Before 65:
-      
-      mean = 54.05319 \Rightarrow $\frac{alpha}{sigma1}$ = 54.05319 
-      variance = 28.78209 \Rightarrow $\frac{alpha}{{sigma1}^{2}}$ = 28.78209
-      Hence, $sigma1$ = 1.8780 and $alpha$ = 101.5127
-    
-  + After 65:
-    
-      mean = 79.79213 \Rightarrow $mu$ = 79.79213
-      standard deviation = 6.132856 \Rightarrow $sigma2$ = 6.132856
+### Model 1:
 
+Model one is a mixture distribution of a Gamma distribution and a Normal
+distribution.
 
-* Model 2:
+* For waiting time < 65:
 
-    + Before 65:
-    
-    mean = 54.05319 \Rightarrow $\frac{alpha}{sigma1}$ = 54.05319 
-      variance = 28.78209 \Rightarrow $\frac{alpha}{{sigma1}^{2}}$ = 28.78209
-      Hence, $sigma1$ = 1.8780 and $alpha$ = 101.5127
-    
-    
-  + After 65:
+mean = 54.05319 $\implies$ $\frac{\alpha}{\sigma_1}$ = 54.05319 and 
+variance = 28.78209 $\implies$ $\frac{\alpha}{{\sigma_1}^{2}}$ = 28.78209.
+Hence, $\sigma_1$ = 1.8780 and $\alpha$ = 101.5127
 
-    mean = 79.79213 \Rightarrow $\frac{alpha2}{sigma2}$ = 79.79213
-    variance = 37.61192 \Rightarrow $\frac{alpha2}{{sigma2}^{2}}$ = 37.61192
-      Hence, $sigma2$ = 2.1215 and $alpha$ = 169.2757
-      
-* Model 3:
+* For waiting time >= 65:
 
-    + Before 65:
-    
-      mean = 54.05319 and variance = 28.78209 then using formulae of mean and variance
-      for log normal distribution we can find ${sigma1}^{2}$ = log(1 + $\frac{variance}{{mean}^{2}}$) = 0.0098
-      From this we can get $mu1$ = 3.9851
-      
-  + After 65:
-      
-      mean = 79.79213 and variance = 37.61192 then using formulae of mean and variance
-      for log normal distribution we can find ${sigma2}^{2}$ = log(1 + $\frac{variance}{{mean}^{2}}$) = 0.00589
-      From this we can get $mu2$ = 4.3765
-      
-* For all models:
+mean = 79.79213 $\implies$ $\mu$ = 79.79213 and
+standard deviation = 6.132856 $\implies$ $\sigma_2$ = 6.132856
 
-$p$ = P(waiting time < 65) = 0.3456
+### Model 2:
 
+Model two is a mixture distribution of 2 Gamma distributions.
+
+* For waiting time < 65:
+
+mean = 54.05319 $\implies$ $\frac{\alpha}{\sigma_1}$ = 54.05319 and
+variance = 28.78209 $\implies$ $\frac{\alpha}{{\sigma_1}^{2}}$ =
+28.78209. Hence, $\sigma_1$ = 1.8780 and $\alpha$ = 101.5127
+
+* For waiting time >= 65:
+
+mean = 79.79213 $\implies$ $\frac{\alpha_2}{\sigma_2}$ = 79.79213
+and variance = 37.61192 $\implies$ $\frac{\alpha_2}{{\sigma_2}^{2}}$ =
+37.61192.
+Hence, $\sigma_2$ = 2.1215 and $\alpha$ = 169.2757
+
+### Model 3:
+
+Model three is a mixture distribution of 2 Log normal distributions.
+
+* For waiting time < 65:
+
+mean = 54.05319 and variance = 28.78209 then using formulas of mean and variance for log normal distribution we can find
+${\sigma_1}^{2}$ = log(1 + $\frac{variance}{{mean}^{2}}$) = 0.0098.
+From this we can get $\mu_1$ = 3.9851
+
+* For waiting time >= 65:
+
+mean = 79.79213 and variance = 37.61192 then using formulas of mean and variance for log normal distribution we can find
+${\sigma_2}^{2}$ = log(1 + $\frac{variance}{{mean}^{2}}$) = 0.00589.
+From this we can get $\mu_2$ = 4.3765
+
+### For all the 3 models:
+
+$p$ = P(waiting time \< 65) = 0.3456
+
+Creating a function named 'MyMLE' which will return a vector containing
+the MLE estimates of the parameters and the value of the likelihood
+function where ever it has been maximized, according to the model number.
 
 ```{r}
 
 MyMLE = function(data_obtained,modelnumber,initial)
 {
   if(modelnumber==1)
- {
-  NegLogLike = function(initial,data_obtained)
-  {
-    alpha = exp(initial[1])
-    sigma1 = exp(initial[2])
-    mu = initial[3]
-    sigma2 = exp(initial[4])
-    p = exp(initial[5])/(1 + exp(initial[5]))
-    n = length(data_obtained)
-    logl = 0
-    for(i in 1:n)
-   { 
-      logl = logl + log(p*dgamma(data_obtained[i],shape = alpha,
-                        scale = sigma1) + (1-p)*dnorm(data_obtained[i],
-                                             mean = mu,sd=sigma2))
-  }
-   return(-logl)
-}
-  fit = optim(initial,NegLogLike,data_obtained=data_obtained)
-  alphar = exp(fit$par[1])
-  sigma1r = exp(fit$par[2])
-  mur = fit$par[3]
-  sigma2r = exp(fit$par[4])
-  pr = exp(fit$par[5])/(1 + exp(fit$par[5]))
-  toreturn = c(length(fit$par),alphar,sigma1r,mur,sigma2r,pr,-fit$value)
-  return(toreturn)
-  }
-  else if(modelnumber==2)
-  {
-  NegLogLike = function(initial,data_obtained)
-  {
-    alpha1 = exp(initial[1])
-    sigma1 = exp(initial[2])
-    alpha2 = exp(initial[3])
-    sigma2 = exp(initial[4])
-    p = exp(initial[5])/(1 + exp(initial[5]))
-    n = length(data_obtained)
-    logl = sum(log(p*dgamma(data_obtained,shape = alpha1,
-                        scale = sigma1) + (1-p)*dgamma(data_obtained,
-                                          shape = alpha2,scale=sigma2)))
-    return(-logl)
-  }
-  fit = optim(initial,NegLogLike,data_obtained=data_obtained)
-  alpha1r = exp(fit$par[1])
-  sigma1r = exp(fit$par[2])
-  alpha2r = exp(fit$par[3])
-  sigma2r = exp(fit$par[4])
-  pr = exp(fit$par[5])/(1 + exp(fit$par[5]))
-  toreturn = c(length(fit$par),alpha1r,sigma1r,alpha2r,sigma2r,pr,-fit$value)
-  return(toreturn)
-  }
-  else{
-  NegLogLike = function(initial,data_obtained)
-  {
-    mu1 = initial[1]
-    sigma1 = exp(initial[2])
-    mu2 = initial[3]
-    sigma2 = exp(initial[4])
-    p = exp(initial[5])/(1 + exp(initial[5]))
-    n = length(data_obtained)
-    logl = sum(log(p*dlnorm(data_obtained,mu1,
-                        sigma1) + (1-p)*dlnorm(data_obtained,
-                                                mean = mu2,sd=sigma2)))
-    return(-logl)
-  }
-  fit = optim(initial,NegLogLike,data_obtained=data_obtained)
-  mu1r = fit$par[1]
-  sigma1r = exp(fit$par[2])
-  mu2r = fit$par[3]
-  sigma2r = exp(fit$par[4])
-  pr = exp(fit$par[5])/(1 + exp(fit$par[5]))
-  toreturn = c(length(fit$par),mu1r,sigma1r,mu2r,sigma2r,pr,-fit$value)
-  return(toreturn)
-  }
- }
-
-MyMLE(faithful$waiting,1,c(101.5127,1.8780,79.79213,6.132856,0.35))
-MyMLE(faithful$waiting,3,c(40,3,75,20,0.4))
-#NegLogLike(c(40,3,75,20,0.4),faithful$waiting)
-
-
-aicfunction = function(modelnumber,data_obtained)
 {
-  if(modelnumber == 1)
-  {vals = MyMLE(data_obtained,modelnumber,
-                initial = c(101.5127,1.8780,79.79213,6.132856,0.35))
-    answer = 2*vals[1] - 2*vals[2]
+    NegLogLike = function(initial,data_obtained)
+    {
+      alpha = exp(initial[1])
+      sigma1 = exp(initial[2])
+      mu = initial[3]
+      sigma2 = exp(initial[4])
+      p = exp(initial[5])/(1 + exp(initial[5]))
+      n = length(data_obtained)
+      logl = 0
+      logl = sum(log(p*dgamma(data_obtained,shape = alpha,
+                                   scale = sigma1) + (1-p)*dnorm(data_obtained, mean = mu,sd=sigma2)))
+      return(-logl)
+    }
+    fit = optim(initial,NegLogLike,data_obtained=data_obtained)
+    alphar = exp(fit$par[1])
+    sigma1r = exp(fit$par[2])
+    mur = fit$par[3]
+    sigma2r = exp(fit$par[4])
+    pr = exp(fit$par[5])/(1 + exp(fit$par[5]))
+    toreturn = c(length(fit$par),alphar,sigma1r,mur,sigma2r,pr,-fit$value)
+    return(toreturn)
   }
-  else if(modelnumber == 2)
+else if(modelnumber == 2)
   {
-    vals = MyMLE(data_obtained,modelnumber,initial = c(101.5127,1.8780,169.2757,2.1215,0.3456))
-    answer = 2*vals[1] - 2*vals[2]
+    NegLogLike = function(initial,data_obtained)
+    {
+      alpha1 = exp(initial[1])
+      sigma1 = exp(initial[2])
+      alpha2 = exp(initial[3])
+      sigma2 = exp(initial[4])
+      p = exp(initial[5])/(1 + exp(initial[5]))
+      n = length(data_obtained)
+      logl = sum(log(p*dgamma(data_obtained,shape = alpha1,
+                              scale = sigma1) + (1-p)*dgamma(data_obtained,
+                                                  shape = alpha2,scale=sigma2)))
+      return(-logl)
+    }
+    fit = optim(initial,NegLogLike,data_obtained=data_obtained)
+    alpha1r = exp(fit$par[1])
+    sigma1r = exp(fit$par[2])
+    alpha2r = exp(fit$par[3])
+    sigma2r = exp(fit$par[4])
+    pr = exp(fit$par[5])/(1 + exp(fit$par[5]))
+    toreturn = c(length(fit$par),alpha1r,sigma1r,alpha2r,sigma2r,pr,-fit$value)
+    return(toreturn)
   }
-  else
-  {
-    vals = MyMLE(data_obtained,modelnumber,initial = c(3.9851,0.0098,4.3765,0.00589,0.3456))
-    answer = 2*vals[1] - 2*vals[2]
+else{
+    NegLogLike = function(initial,data_obtained)
+    {
+      mu1 = initial[1]
+      sigma1 = exp(initial[2])
+      mu2 = initial[3]
+      sigma2 = exp(initial[4])
+      p = exp(initial[5])/(1 + exp(initial[5]))
+      n = length(data_obtained)
+      logl = sum(log(p*dlnorm(data_obtained,mu1,
+                              sigma1) + (1-p)*dlnorm(data_obtained, 
+                                                     mean = mu2,sd=sigma2)))
+      return(-logl)
+    }
+    fit = optim(initial,NegLogLike,data_obtained=data_obtained)
+    mu1r = fit$par[1]
+    sigma1r = exp(fit$par[2])
+    mu2r = fit$par[3]
+    sigma2r = exp(fit$par[4])
+    pr = exp(fit$par[5])/(1 + exp(fit$par[5]))
+    toreturn = c(length(fit$par),mu1r,sigma1r,mu2r,sigma2r,pr,-fit$value)
+    return(toreturn)
+  }}
+```
+
+<br>
+
+### Akaike's Information Criterion (AIC) :
     
-  }
-  answer
-}
-
-```
-<br><br><br>
-
-We have written a function MyMLE which gives maximum lik
+Akaike's Information Criterion also called AIC is used for comparing different statistical models. It's defined as follows:
+    
+AIC = 2$\times$*No. of parameters in the fitted model* -
+      2$\times$*Value of the maximized log likelihood function*
+      
+The **lower** the AIC for a model, the better the model.
+<br><br>
+We have written a function $MyMLE$. Along with the MLE estimates of the parameters, it will also return the value of the likelihood function where it has been maximized. Using that we are now going to write a function which is going to calculate the AIC for the 3
+given models.
+    
 ```{r}
-#aicfunction(modelnumber = 1,data_obtained = faithful$waiting)
-#aicfunction(modelnumber = 2,data_obtained = faithful$waiting)
-#aicfunction(modelnumber = 3,data_obtained = faithful$waiting)
+    aicfunction = function(modelnumber,data_obtained)
+    {
+      if(modelnumber == 1)
+      {vals = MyMLE(data_obtained,modelnumber,
+                    initial = c(log(101.5127),log(1.8780),79.79213,log(6.132856),-log(1/0.35 - 1)))
+      answer = 2*vals[1] - 2*vals[7]
+      parameters = vals[2:6]
+      }
+      else if(modelnumber == 2)
+      {
+        vals = MyMLE(data_obtained,modelnumber,initial = c(log(101.5127),log(1.8780),log(169.2757),log(2.1215),-log(1/0.35 - 1)))
+        answer = 2*vals[1] - 2*vals[7]
+        parameters = vals[2:6]
+      }
+      else
+      {
+        vals = MyMLE(data_obtained,modelnumber,initial = c(3.9851,log(sqrt(0.0098)),4.3765,log(sqrt(0.00589)),-log(1/0.35 - 1)))
+        answer = 2*vals[1] - 2*vals[7]
+        parameters = vals[2:6]
+      }
+      return(list(answer,parameters))
+    }
+    
+    
 ```
+    
+<br> AIC for model 1:
+      
+```{r}
+    x1 <- aicfunction(modelnumber = 1,data_obtained = faithful$waiting)
+    cat('AIC for model 1: ',x1[[2]])
+```
+<br> AIC for model 2:
+```{r}
+    x2 <- aicfunction(modelnumber = 2,data_obtained = faithful$waiting) 
+    cat('AIC for model 2: ',x2[[2]])
+```
+<br> AIC for model 3:
+```{r}
+    
+x3 <- aicfunction(modelnumber = 3,data_obtained = faithful$waiting)
+    cat('AIC for model 3: ',x3[[2]])
+```
+<br>
+From above we can see that the third model has the lowest AIC, hence, the **3rd** model is the best among the 3 models.
+<br><br>
+Calculating probability using the 3rd model:
+      
+The parameters for the 3rd model are:
+      
+```{r}
+    Parameters = c("Mu1_hat","Sigma1_hat","Mu2_hat","Sigma2_hat","p_hat")
+    theta = x3[[2]]
+    params = data.frame(Parameters,'Parameter_estimates' = theta)
+    print(params)
+```
+    
+Defining the probability density function for the 3rd model.
+    
+```{r}
+    theta = x3[[2]]
+    
+    dMix = function(x,theta)
+    {
+      mu1_hat = theta[1]
+      sigma1_hat = theta[2]
+      mu2_hat = theta[3]
+      sigma2_hat = theta[4]
+      p_hat = theta[5]
+      f = p_hat*dlnorm(x,mu1_hat,sigma1_hat)+(1-p_hat)*dlnorm(x,mu2_hat,sigma2_hat)
+      return(f)
+    }
+    
+```
+<br>
+Integrating the probability density function defined above for the
+calculated MLE estimates:
+<br>
+```{r}
+    
+    probability = as.vector(integrate(dMix,60,70,theta))
+    
+    cat('P(60 < waiting time < 70) = ',probability[[1]],"\n","Absolute error = ",
+        probability[[2]])
+    
+```
+<br>
+Hence, the probability for waiting time of eruptions to be between 60 and 70 minutes is approximately **9%**.
+    
 
 \newpage
 
