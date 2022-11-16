@@ -491,6 +491,36 @@ grid()
 **Note**: If you use built-in function like `lm` or any packages then no points will be awarded.
 
 **Part A**: We want to predict the `Claims` as function of `Holders`. So we want to fit the following models:
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(MASS)
+library(VGAM)
+library(stats4)
+library(splines)
+library(dplyr)
+df=data.frame(Insurance$Holders,Insurance$Claims)
+
+colnames(df)=c("Holders(x)","Claims(y)")
+df=setNames(as.data.frame(cbind(df,df^2)),c(names(df),                                      paste0(names(df),"^2")))
+df$product <- df$`Holders(x)`*df$`Claims(y)`
+sum_of_prod=as.numeric(sum(df$product))
+sum_x_2=sum(df$`Holders(x)^2`)
+sum_y_2=sum(df$`Claims(y)^2`)
+sum_x=as.numeric(sum(df$`Holders(x)`))
+sum_y=sum(df$`Claims(y)`)
+number=nrow(df)
+slope= (number*sum_of_prod - sum_x * sum_y)/(number*sum_x_2 - (sum_x)^2)
+intercept= (sum_y*sum_x_2 - sum_x*sum_of_prod)/(number*sum_x_2 - (sum_x)^2)
+df$Claims_pred= slope*df$`Holders(x)` + intercept
+df$residuals=(df$`Claims(y)` - df$Claims_pred)
+intercept
+slope
+cat("slope is: ",slope)
+cat("intercept is: ",intercept)
+```
+
+
 $$
 \texttt{Claims}_i=\beta_0 + \beta_1~\texttt{Holders}_i + \varepsilon_i,~~~i=1,2,\cdots,n
 $$
@@ -500,13 +530,90 @@ The above model can alse be re-expressed as,
 $$
 \texttt{Claims}_i\sim N(\mu_i,\sigma^2),~~where
 $$
+
+```{r all log likeli functions, echo = FALSE, message=FALSE, warning=FALSE}
+df1=data.frame(df$`Holders(x)`,df$`Claims(y)`)
+colnames(df1)=c("x","y")
+df2=df1[-61,]
+
+loglikeli_normal <- function(theta_nor,data){
+  beta_0 = theta_nor[1]
+  beta_1 = theta_nor[2]
+  sigma = theta_nor[3]
+  x=data$Holders
+  y=data$Claims
+  number=nrow(data)
+  neg_log_likeli=-(log(2*pi))*number/2-(log(sigma*sigma))*number/2- 
+                         sum((y - beta_0 - beta_1*x)^2/(2*sigma*sigma))
+  return (-neg_log_likeli)
+}
+
+loglikeli_lap <- function(data,theta_lap){
+  beta_0 = theta_lap[1]
+  beta_1 = theta_lap[2]
+  sigma = theta_lap[3]
+  x=data$x
+  y=data$y
+  number_lap=nrow(data)
+  neg_log_lap = number_lap*log(1/(2*sigma))-sum(abs(y- beta_0 - beta_1*x))/sigma
+  return (-neg_log_lap)
+}
+
+loglikeli_lognormal <- function(data,theta_lnorm){
+  beta_0 = theta_lnorm[1]
+  beta_1 = theta_lnorm[2]
+  sigma = theta_lnorm[3]
+  x=data$Holders
+  y=data$Claims
+  number=nrow(data)
+  neg_log_lognormal=0
+    
+  neg_log_lognormal = sum( log( (1/(2*y^(2)*pi*sigma^(2))^{1/2})*exp( -((log(y)-beta_0-beta_1*log(x))^{2})/(2*sigma^{2}) ) )  )
+  
+  return (-neg_log_lognormal)
+}
+
+loglikeli_gamma <- function(theta_gam,data){
+  
+  beta_0 = (theta_gam[1])
+  beta_1 = (theta_gam[2])
+  sigma = exp((theta_gam[3]))
+  neg_log_gamma = sum(log(dgamma(data$Claims,shape=exp(beta_0+beta_1*log(data$Holders)),scale=sigma)))
+  return (-neg_log_gamma)
+}
+```
+
+
+
 $$
 \mu_i =\beta_0 + \beta_1~\texttt{Holders}_i + \varepsilon_i,~~~i=1,2,\cdots,n
 $$
 
 
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
 (i) Clearly write down the negative-log-likelihood function in `R`. Then use `optim` function to estimate MLE of $\theta=(\beta_0,\beta_1,\sigma)$
 (ii) Calculate **Bayesian Information Criterion** (BIC) for the model.
+
+
+```{r Regression for normal, echo=FALSE,warning=FALSE, message=FALSE}
+theta_nor=c(beta_0=0,
+            beta_1=0,
+            sigma=15)
+fit_norm=optim(par=theta_nor,loglikeli_normal,data=Insurance)
+likeli_value_normal=fit_norm$value
+BIC_norm=3*log(nrow(Insurance))-2*(-likeli_value_normal)
+print("the MLE of parameter are")
+fit_norm$par
+cat("Bayesian Information criterion for this model is",BIC_norm)
+plot(df1$x,df1$y,pch=20,size=0.5,col="Blue",
+     xlab="Holders",ylab="Claims",main="Regression line for Claims vs Holders (Normal Distribution)")
+abline(fit_norm$par[1],fit_norm$par[2],col="red")
+```
+
 
 **Part B**: Now we want to fit the same model with change in distribution:
 $$
@@ -517,6 +624,27 @@ $$
 (i) Clearly write down the negative-log-likelihood function in `R`. Then use `optim` function to estimate MLE of $\theta=(\beta_0,\beta_1,\sigma)$
 
 (ii) Calculate **Bayesian Information Criterion** (BIC) for the model.
+
+
+
+```{r Regression for laplace, echo=FALSE,warning=FALSE, message=FALSE}
+theta_lap=c(beta_0=0,
+             beta_1=0,
+             sigma=50)
+fit_lap=optim(theta_lap,fn = loglikeli_lap,data=df1)
+likeli_value_lap=fit_lap$value
+BIC_lap=3*log(nrow(df1))-2*(-likeli_value_lap)
+print("the MLE of parameter are")
+fit_lap$par
+cat("Bayesian Information criterion for this model is",BIC_lap)
+plot(df1$x,df1$y,pch=20,size=0.5,col="Blue",
+     xlab="Holders",ylab="Claims",main="Regression line for Claims vs Holders (Laplace Distribution)")
+abline(fit_lap$par[1],fit_lap$par[2],col="red")
+
+```
+
+
+
 
 **Part C**: We want to fit the following models:
 $$
@@ -532,6 +660,25 @@ Note that $\beta_0,\beta_1 \in\mathbb{R}$ and $\sigma \in \mathbb{R}^{+}$.
 
 (ii) Calculate **Bayesian Information Criterion** (BIC) for the model.
 
+
+```{r Regression for lognormal, echo=FALSE,warning=FALSE, message=FALSE}
+theta_lnorm=c(beta_0=-5,
+              beta_1=0.11,
+              sigma=1)
+fit_lnorm=optim(par=theta_lnorm,loglikeli_lognormal,data=Insurance[-61,])
+likeli_value_lnorm=fit_lnorm$value
+BIC_lnorm=3*log(nrow(Insurance[-61,]))-2*(-likeli_value_lnorm)
+print("the MLE of parameter are")
+fit_lnorm$par
+cat("Bayesian Information criterion for this model is",BIC_lnorm)
+plot(log(df2$x),log(df2$y),pch=20,size=0.5,col="Blue",
+     xlab="log(Holders)",ylab="log(Claims)",main="Regression line for Claims vs Holders (Log Normal Distribution)")
+abline(fit_lnorm$par[1],fit_lnorm$par[2],col="red")
+```
+
+
+
+
 **Part D**: We want to fit the following models:
 $$
 \texttt{Claims}_i\sim Gamma(\alpha_i,\sigma), where
@@ -540,9 +687,50 @@ $$
 log(\alpha_i)=\beta_0 + \beta_1 \log(\texttt{Holders}_i), ~~i=1,2,...,n
 $$
 
-
+```{r Regression for gamma, echo=FALSE,warning=FALSE, message=FALSE}
+theta_gam=c(beta_0=-1,
+            beta_1=0.11,
+            sigma=1)
+fit_gamma=optim(par=theta_gam,loglikeli_gamma,data=Insurance[-61,])
+likeli_value_gamma=fit_gamma$value
+BIC_gam=3*log(nrow(Insurance[-61,]))-2*(-likeli_value_gamma)
+print("the MLE of parameter are")
+fit_gamma$par
+cat("Bayesian Information criterion for this model is",BIC_gam)
+plot(log(df2$x),log(df2$y),pch=20,size=0.5,col="Blue",
+     xlab="log(Holders)",ylab="log(Claims)",main="Regression line for Claims vs Holders (Gamma Distribution)")
+abline(fit_gamma$par[1],fit_gamma$par[2],col="red")
+```
 
 (iii) Compare the BIC of all three models
+
+
+
+```{r Comparing MLE, echo=FALSE,warning=FALSE, message=FALSE}
+ print("The MLE comparison for 4 models")
+ distribution_type=c("Normal","Laplace","Log Normal","Gamma")
+ Beta_0=round(c(fit_norm$par[1],fit_lap$par[1],fit_lnorm$par[1],fit_gamma$par[1]),4)
+ Beta_1=round(c(fit_norm$par[2],fit_lap$par[2],fit_lnorm$par[2],fit_gamma$par[2]),4)
+ Sigma=round(c(fit_norm$par[3],fit_lap$par[3],fit_lnorm$par[3],fit_gamma$par[3]),4)
+ MLE_mat=data.frame(distribution_type,Beta_0,Beta_1,Sigma)
+ print(MLE_mat)
+
+``` 
+
+
+```{r Comparing BIS, echo=FALSE,warning=FALSE, message=FALSE}
+ distribution_type=c("Normal","Laplace","Log Normal","Gamma")
+ BIC_Value=c(BIC_norm,BIC_lap,BIC_lnorm,BIC_gam)
+ BIC_mat=data.frame(distribution_type,BIC_Value)
+ print(BIC_mat)
+
+``` 
+
+### Bayesian Information Criterion Comparison:
+
+
+          Bayesian Information criterion is useful for selecting the best model among the finite set of models.In general the models with lower BIC are preferred. Hence from the above 4 models Gamma and Log Normal distributions are preferred comapred to Normal and Laplace Distribution.
+
 
 ## Problem 5: Computational Finance - Modelling Stock prices
 
