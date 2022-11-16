@@ -500,18 +500,18 @@ given models.
       
 ```{r}
     x1 <- aicfunction(modelnumber = 1,data_obtained = faithful$waiting)
-    cat('AIC for model 1: ',x1[[2]])
+    cat('AIC for model 1: ',x1[[1]])
 ```
 <br> AIC for model 2:
 ```{r}
     x2 <- aicfunction(modelnumber = 2,data_obtained = faithful$waiting) 
-    cat('AIC for model 2: ',x2[[2]])
+    cat('AIC for model 2: ',x2[[1]])
 ```
 <br> AIC for model 3:
 ```{r}
     
-x3 <- aicfunction(modelnumber = 3,data_obtained = faithful$waiting)
-    cat('AIC for model 3: ',x3[[2]])
+   x3 <- aicfunction(modelnumber = 3,data_obtained = faithful$waiting)
+    cat('AIC for model 3: ',x3[[1]])
 ```
 <br>
 From above we can see that the third model has the lowest AIC, hence, the **3rd** model is the best among the 3 models.
